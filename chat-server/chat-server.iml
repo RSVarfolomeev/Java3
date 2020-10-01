@@ -7,8 +7,8 @@
     </content>
     <orderEntry type="inheritedJdk" />
     <orderEntry type="sourceFolder" forTests="false" />
-    <orderEntry type="module" module-name="chat-library" />
-    <orderEntry type="module" module-name="network" />
+    <orderEntry type="module" module-name="chat-library" exported="" />
+    <orderEntry type="module" module-name="network" exported="" />
     <orderEntry type="module-library" exported="">
       <library>
         <CLASSES>

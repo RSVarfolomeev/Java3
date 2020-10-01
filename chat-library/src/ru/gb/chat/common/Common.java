@@ -50,10 +50,6 @@ public class Common {
         return TYPE_BCAST_CLIENT + DELIMITER + msg;
     }
 
-    public static String getChangeNickname(String msg) {
-        return CHANGE_NICKNAME + DELIMITER + msg;
-    }
-
     public static String getChangeNicknameLoginPassword(String msg, String login, String password) {
         return CHANGE_NICKNAME + DELIMITER + msg + DELIMITER + login + DELIMITER + password;
     }

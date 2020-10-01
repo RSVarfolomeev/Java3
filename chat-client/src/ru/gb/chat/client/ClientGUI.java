@@ -8,8 +8,7 @@ import javax.swing.*;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.FileWriter;
-import java.io.IOException;
+import java.io.*;
 import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
@@ -25,7 +24,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
     private final JTextField tfIPAddress = new JTextField("127.0.0.1");
     private final JTextField tfPort = new JTextField("8189");
     private final JCheckBox cbAlwaysOnTop = new JCheckBox("Always on top");
-    private final JTextField tfLogin = new JTextField("ivan");
+    private final JTextField tfLogin = new JTextField("QA");
     private final JPasswordField tfPassword = new JPasswordField("123");
     private final JButton btnLogin = new JButton("Login");
 
@@ -82,6 +81,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         add(panelBottom, BorderLayout.SOUTH);
 
         setVisible(true);
+        wrtLogFileToLogArea();
     }
 
     public static void main(String[] args) {
@@ -102,7 +102,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
             sendMessage();
         } else if (src == btnLogin) {
             connect();
-        } else if (src == btnChangeNickname|| src == tfChangeNickname) {
+        } else if (src == btnChangeNickname || src == tfChangeNickname) {
             changeNickname();
         } else if (src == btnDisconnect) {
             socketThread.close();
@@ -133,20 +133,7 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         if ("".equals(msg)) return;
         tfChangeNickname.setText(null);
         tfChangeNickname.grabFocus();
-//        socketThread.sendMessage(Common.getChangeNickname(msg));
         socketThread.sendMessage(Common.getChangeNicknameLoginPassword(msg, tfLogin.getText(), tfPassword.getText()));
-    }
-
-    private void wrtMsgToLogFile(String msg, String username) {
-        try (FileWriter out = new FileWriter("log.txt", true)) {
-            out.write(username + ": " + msg + "\n");
-            out.flush();
-        } catch (IOException e) {
-            if (!shownIoErrors) {
-                shownIoErrors = true;
-                showException(Thread.currentThread(), e);
-            }
-        }
     }
 
     private void putLog(String msg) {
@@ -212,27 +199,95 @@ public class ClientGUI extends JFrame implements ActionListener, Thread.Uncaught
         showException(thread, exception);
     }
 
+    private void wrtLogFileToLogArea() {
+        try (BufferedReader in = new BufferedReader(new FileReader("log.txt"))) {
+            String logFile = "";
+            for (int i = 0; i < LogFileNumberLines() - 100; ++i) {
+                in.readLine();
+            }
+            for (int i = LogFileNumberLines() - 100; i < LogFileNumberLines(); ++i) {
+                logFile += in.readLine() + "\n";
+            }
+            log.append(logFile);
+            log.setCaretPosition(log.getDocument().getLength());
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+    }
+
+    private int LogFileNumberLines() {
+        try (BufferedReader in = new BufferedReader(new FileReader("log.txt"))) {
+            int j = 0;
+            while (in.readLine() != null) {
+                j++;
+            }
+            return j;
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+        return 0;
+    }
+
+    private void wrtMsgToLogFile(String msg) {
+        try (FileWriter out = new FileWriter("log.txt", true)) {
+            out.write(msg + "\n");
+            out.flush();
+        } catch (IOException e) {
+            if (!shownIoErrors) {
+                shownIoErrors = true;
+                showException(Thread.currentThread(), e);
+            }
+        }
+    }
+
+    //      Исходный вариант метода.
+//    private void wrtMsgToLogFile(String msg, String username) {
+//        try (FileWriter out = new FileWriter("log.txt", true)) {
+//            out.write(username + ": " + msg + "\n");
+//            out.flush();
+//        } catch (IOException e) {
+//            if (!shownIoErrors) {
+//                shownIoErrors = true;
+//                showException(Thread.currentThread(), e);
+//            }
+//        }
+//    }
+
     private void handleMessage(String msg) {
         String[] arr = msg.split(Common.DELIMITER);
         String msgType = arr[0];
         switch (msgType) {
             case Common.AUTH_ACCEPT:
-                setTitle(WINDOW_TITLE + " entered with nickname: " + arr[1]);
+                String msgAA = WINDOW_TITLE + " entered with nickname: " + arr[1];
+                setTitle(msgAA);
+                wrtMsgToLogFile(msgAA);
                 break;
             case Common.AUTH_DENIED:
                 putLog(msg);
+                wrtMsgToLogFile(msg);
                 break;
             case Common.MSG_FORMAT_ERROR:
                 putLog(msg);
+                wrtMsgToLogFile(msg);
                 socketThread.close();
                 break;
             case Common.TYPE_BROADCAST:
-                putLog(DATE_FORMAT.format(Long.parseLong(arr[1])) +
-                        arr[2] + ": " + arr[3]);
+                String msgTB = DATE_FORMAT.format(Long.parseLong(arr[1])) +
+                        arr[2] + ": " + arr[3];
+                putLog(msgTB);
+                wrtMsgToLogFile(msgTB);
                 break;
             case Common.CHANGE_NICKNAME:
-                putLog(DATE_FORMAT.format(Long.parseLong(arr[1])) +
-                        arr[2] + " change nickname --> " + arr[3]);
+                String msgCN = DATE_FORMAT.format(Long.parseLong(arr[1])) +
+                        arr[2] + " change nickname --> " + arr[3];
+                putLog(msgCN);
+                wrtMsgToLogFile(msgCN);
                 break;
             case Common.USER_LIST:
                 String users = msg.substring(Common.USER_LIST.length() +
