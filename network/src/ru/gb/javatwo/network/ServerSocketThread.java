@@ -5,19 +5,20 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 
-public class ServerSocketThread extends Thread {
+public class ServerSocketThread implements Runnable {
 
     private final int port;
     private final int timeout;
+    String name;
 
     private final ServerSocketThreadListener listener;
 
     public ServerSocketThread(ServerSocketThreadListener listener, String name, int port, int timeout) {
-        super(name);
+        this.name = name;
         this.port = port;
         this.timeout = timeout;
         this.listener = listener;
-        start();
+        new Thread(this);
     }
 
     @Override
@@ -26,7 +27,7 @@ public class ServerSocketThread extends Thread {
         try (ServerSocket server = new ServerSocket(port)) {
             server.setSoTimeout(timeout);
             listener.onServerSocketCreated(this, server);
-            while (!isInterrupted()) {
+            while (!Thread.interrupted()) {
                 Socket client;
                 try {
                     client = server.accept(); // while (!clientConnected || !timeout) {}

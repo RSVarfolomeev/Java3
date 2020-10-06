@@ -11,10 +11,12 @@ import java.net.Socket;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Vector;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class ChatServer implements ServerSocketThreadListener, SocketThreadListener {
 
-    private ServerSocketThread server;
+    ExecutorService server;
     private final DateFormat DATE_FORMAT = new SimpleDateFormat("HH:mm:ss: ");
     private Vector<SocketThread> clients = new Vector<>();
     private ChatServerListener listener;
@@ -24,18 +26,19 @@ public class ChatServer implements ServerSocketThreadListener, SocketThreadListe
     }
 
     public void start(int port) {
-        if (server != null && server.isAlive()) {
-            putLog("Server already stared");
+        if (server != null && !server.isShutdown()) {
+            putLog("Server already started");
         } else {
-            server = new ServerSocketThread(this, "Chat server", port, 2000);
+            server = Executors.newSingleThreadExecutor();
+            server.execute(new ServerSocketThread(this, "Chat server", port, 2000));
         }
     }
 
     public void stop() {
-        if (server == null || !server.isAlive()) {
+        if (server == null || server.isShutdown()) {
             putLog("Server is not running");
         } else {
-            server.interrupt();
+            server.shutdownNow();
         }
     }
 
