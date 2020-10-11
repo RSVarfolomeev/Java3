@@ -1,24 +1,22 @@
+import org.apache.log4j.Logger;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 
-//Организуем гонки:
-//        Все участники должны стартовать одновременно, несмотря на то, что на подготовку у каждого из них уходит разное время.
-//        В туннель не может заехать одновременно больше половины участников (условность).
-//        Попробуйте всё это синхронизировать.
-//        Только после того как все завершат гонку, нужно выдать объявление об окончании.
-//        Можете корректировать классы (в т.ч. конструктор машин) и добавлять объекты классов из пакета util.concurrent.
+//Замена System.out.println на логгирование.
+
 
 class MainClass {
     public static final int CARS_COUNT = 4;
     public static final Semaphore SEMAPHORE = new Semaphore(CARS_COUNT / 2);
     public static final CountDownLatch cdlStart = new CountDownLatch(CARS_COUNT);
-//    public static final CountDownLatch cdlEnd = new CountDownLatch(CARS_COUNT * 3);
+    private static final Logger logger = Logger.getLogger(MainClass.class.getName());
 
 
     public static void main(String[] args) {
-        System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Подготовка!!!");
+        logger.warn("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Подготовка!!!");
         Race race = new Race(new Road(60), new Tunnel(), new Road(40));
         CountDownLatch cdlEnd = new CountDownLatch(CARS_COUNT * race.getStages().size());
         Car[] cars = new Car[CARS_COUNT];
@@ -35,7 +33,7 @@ class MainClass {
             e.printStackTrace();
         }
 
-        System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка началась!!!");
+        logger.warn("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка началась!!!");
 
         try {
             cdlEnd.await();
@@ -43,12 +41,13 @@ class MainClass {
             e.printStackTrace();
         }
 
-        System.out.println("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка закончилась!!!");
+        logger.warn("ВАЖНОЕ ОБЪЯВЛЕНИЕ >>> Гонка закончилась!!!");
     }
 }
 
 class Car implements Runnable {
     private static int CARS_COUNT;
+    private static final Logger logger = Logger.getLogger(Car.class.getName());
 
     static {
         CARS_COUNT = 0;
@@ -82,9 +81,9 @@ class Car implements Runnable {
     @Override
     public void run() {
         try {
-            System.out.println(this.name + " готовится");
+            logger.info(this.name + " готовится");
             Thread.sleep(500 + (int) (Math.random() * 800));
-            System.out.println(this.name + " готов");
+            logger.info(this.name + " готов");
             MainClass.cdlStart.countDown();
         } catch (Exception e) {
             e.printStackTrace();
@@ -114,6 +113,8 @@ abstract class Stage {
 }
 
 class Road extends Stage {
+    private static final Logger logger = Logger.getLogger(Road.class.getName());
+
     public Road(int length) {
         this.length = length;
         this.description = "Дорога " + length + " метров";
@@ -122,9 +123,9 @@ class Road extends Stage {
     @Override
     public void go(Car c) {
         try {
-            System.out.println(c.getName() + " начал этап: " + description);
+            logger.info(c.getName() + " начал этап: " + description);
             Thread.sleep(length / c.getSpeed() * 1000);
-            System.out.println(c.getName() + " закончил этап: " + description);
+            logger.info(c.getName() + " закончил этап: " + description);
             c.getCdlEnd().countDown();
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -133,6 +134,8 @@ class Road extends Stage {
 }
 
 class Tunnel extends Stage {
+    private static final Logger logger = Logger.getLogger(Tunnel.class.getName());
+
     public Tunnel() {
         this.length = 80;
         this.description = "Тоннель " + length + " метров";
@@ -142,14 +145,14 @@ class Tunnel extends Stage {
     public void go(Car c) {
         try {
             try {
-                System.out.println(c.getName() + " готовится к этапу(ждет): " + description);
+                logger.info(c.getName() + " готовится к этапу(ждет): " + description);
                 MainClass.SEMAPHORE.acquire();
-                System.out.println(c.getName() + " начал этап: " + description);
+                logger.info(c.getName() + " начал этап: " + description);
                 Thread.sleep(length / c.getSpeed() * 1000);
             } catch (InterruptedException e) {
                 e.printStackTrace();
             } finally {
-                System.out.println(c.getName() + " закончил этап: " + description);
+                logger.info(c.getName() + " закончил этап: " + description);
                 MainClass.SEMAPHORE.release();
                 c.getCdlEnd().countDown();
             }
