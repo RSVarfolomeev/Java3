@@ -1,7 +1,7 @@
 import java.util.LinkedList;
 
 public class ChainingHashMap<Key, Value> {
-    private int capacity = 7;
+    private int capacity = 3;
     private int size;
 
     private LinkedList<Node>[] st;
@@ -56,6 +56,20 @@ public class ChainingHashMap<Key, Value> {
         }
         st[i].addLast(new Node(key, value));
         size++;
+    }
+//  1. Создать метод удаления в классе, реализующий метод цепочек.
+    public void delete(Key key) {
+        checkKeyNotNull(key);
+        int i = hash(key);
+        int index = 0;
+        for (Node node : st[i]) {
+            if (key.equals(node.key)) {
+                st[i].remove(index);
+                size--;
+                return;
+            }
+            index++;
+        }
     }
 
     public Value get(Key key) {
